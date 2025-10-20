@@ -133,11 +133,14 @@ const EventPromptForm = ({ onGenerate, isGenerating }) => {
           <textarea
             value={prompt}
             onChange={handlePromptChange}
-            placeholder={`Describe your ${eventType || 'event'} vision in detail... Include audience size, venue preferences, key activities, budget range, and any special requirements. Be specific and detailed for better AI-generated plans.`}
-            rows={6}
-            className={`w-full px-3 py-2 border rounded-md bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none ${
+            placeholder={`Describe your ${eventType || 'event'} vision in detail... Include audience size, venue preferences, key activities, budget range, and any special requirements. Be specific and detailed for better AI-generated plans.
+
+You can write in English or Hindi, and use multiple lines to describe your event in detail.`}
+            rows={8}
+            className={`w-full px-4 py-3 border rounded-md bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-vertical ${
               errors?.prompt ? 'border-error' : 'border-border'
-            }`}
+            } leading-relaxed whitespace-pre-wrap`}
+            style={{ minHeight: '150px', lineHeight: '1.6' }}
           />
           <div className="flex justify-between items-center mt-1">
             {errors?.prompt ? (

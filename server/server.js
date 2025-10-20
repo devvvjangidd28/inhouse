@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -8,6 +9,7 @@ const eventRoutes = require('./routes/eventRoutes');
 const budgetRoutes = require('./routes/budgetRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const preferencesRoutes = require('./routes/preferencesRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -21,6 +23,7 @@ app.use('/api/events', eventRoutes);
 app.use('/api/budgets', budgetRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/preferences', preferencesRoutes);
+app.use('/api/ai', aiRoutes);
 
 app.get('/', (req, res) => {
   res.json({
@@ -32,7 +35,8 @@ app.get('/', (req, res) => {
       events: '/api/events',
       budgets: '/api/budgets',
       tasks: '/api/tasks',
-      preferences: '/api/preferences'
+      preferences: '/api/preferences',
+      ai: '/api/ai'
     }
   });
 });
@@ -66,6 +70,7 @@ const startServer = async () => {
       console.log(`  → Budgets:     http://localhost:${PORT}/api/budgets`);
       console.log(`  → Tasks:       http://localhost:${PORT}/api/tasks`);
       console.log(`  → Preferences: http://localhost:${PORT}/api/preferences`);
+      console.log(`  → AI:          http://localhost:${PORT}/api/ai`);
       console.log('\n========================================\n');
     });
   } catch (error) {

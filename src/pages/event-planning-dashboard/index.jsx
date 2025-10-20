@@ -11,15 +11,17 @@ import QuickAccessPanel from './components/QuickAccessPanel';
 import EmptyState from './components/EmptyState';
 import EventPreferencesPanel from './components/EventPreferencesPanel';
 import { eventService } from '../../services/eventService';
+import { aiService } from '../../services/aiService';
 
 const EventPlanningDashboard = () => {
   const navigate = useNavigate();
   const { notifications, showSuccess, showError, showLoading, dismissNotification } = useNotifications();
-  
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasGeneratedContent, setHasGeneratedContent] = useState(false);
   const [eventData, setEventData] = useState(null);
   const [generatedContent, setGeneratedContent] = useState([]);
+  const [eventPreferences, setEventPreferences] = useState({});
 
   // Mock generated content data
   const mockGeneratedContent = [
@@ -118,32 +120,90 @@ const EventPlanningDashboard = () => {
     const loadingId = showLoading('Generating your event plan with AI...');
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const preferences = {
+        venue: eventPreferences.venue,
+        number_of_people: eventPreferences.numberOfPeople,
+        budget: eventPreferences.budget,
+        event_date: eventPreferences.eventDate,
+        event_time: eventPreferences.eventTime,
+        event_type: formData.eventType
+      };
 
-      const savedEvent = await eventService.createEvent({
-        eventName: formData.eventName || formData.eventType || 'New Event',
-        eventType: formData.eventType,
-        description: formData.description,
-        date: formData.date,
-        time: formData.time,
-        location: formData.location,
-        city: formData.city,
-        venueType: formData.venueType,
-        audienceSize: formData.audienceSize,
-        duration: formData.duration
-      });
+      const aiResponse = await aiService.generateAllContent(formData.prompt, preferences);
 
-      setEventData(savedEvent);
-      setGeneratedContent(mockGeneratedContent);
-      setHasGeneratedContent(true);
+      if (aiResponse.success && aiResponse.data) {
+        const { event, eventPlan, poster, email, instagram } = aiResponse.data;
 
-      dismissNotification(loadingId);
-      showSuccess('Event plan generated and saved successfully!');
+        setEventData(event);
+
+        const generatedItems = [
+          {
+            id: 'event-plan',
+            title: 'Event Timeline',
+            description: 'AI-generated schedule and agenda',
+            icon: 'Calendar',
+            status: 'completed',
+            progress: 100,
+            lastUpdated: new Date().toISOString(),
+            items: eventPlan.timeline || []
+          },
+          {
+            id: 'task-list',
+            title: 'Task Management',
+            description: 'Organized action items',
+            icon: 'CheckSquare',
+            status: 'in-progress',
+            progress: 75,
+            lastUpdated: new Date().toISOString(),
+            items: eventPlan.tasks?.map(t => t.title || t) || []
+          },
+          {
+            id: 'budget',
+            title: 'Budget Estimate',
+            description: 'AI-generated cost breakdown',
+            icon: 'DollarSign',
+            status: 'completed',
+            progress: 100,
+            lastUpdated: new Date().toISOString(),
+            items: eventPlan.budget ? [
+              `Venue: ₹${eventPlan.budget.venue || 0}`,
+              `Catering: ₹${eventPlan.budget.catering || 0}`,
+              `Services: ₹${eventPlan.budget.services || 0}`,
+              `Miscellaneous: ₹${eventPlan.budget.miscellaneous || 0}`,
+              `Total: ₹${eventPlan.budget.total || 0}`
+            ] : []
+          },
+          {
+            id: 'marketing',
+            title: 'Marketing Materials',
+            description: 'AI-generated promotional content',
+            icon: 'Megaphone',
+            status: 'completed',
+            progress: 100,
+            lastUpdated: new Date().toISOString(),
+            items: [
+              'Event poster (AI-generated)',
+              'Email invitation draft',
+              'Instagram captions (3 variants)',
+              'Social media hashtags'
+            ],
+            aiContent: { poster, email, instagram }
+          }
+        ];
+
+        setGeneratedContent(generatedItems);
+        setHasGeneratedContent(true);
+
+        dismissNotification(loadingId);
+        showSuccess('Event plan generated successfully with AI!');
+      } else {
+        throw new Error('Failed to generate AI content');
+      }
 
     } catch (error) {
       console.error('Error creating event:', error);
       dismissNotification(loadingId);
-      showError('Failed to generate event plan. Please try again.');
+      showError(error.response?.data?.error || 'Failed to generate event plan. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -188,11 +248,24 @@ const EventPlanningDashboard = () => {
   };
 
   const handlePreferencesSave = (savedData) => {
+    setEventPreferences({
+      venue: savedData.venue,
+      numberOfPeople: savedData.number_of_people,
+      budget: savedData.budget,
+      eventDate: savedData.event_date,
+      eventTime: savedData.event_time
+    });
     showSuccess('Event preferences saved successfully!');
   };
 
   const handlePreferencesLoad = (loadedData) => {
-    console.log('Preferences loaded:', loadedData);
+    setEventPreferences({
+      venue: loadedData.venue,
+      numberOfPeople: loadedData.number_of_people,
+      budget: loadedData.budget,
+      eventDate: loadedData.event_date,
+      eventTime: loadedData.event_time
+    });
   };
 
   const scrollToForm = () => {

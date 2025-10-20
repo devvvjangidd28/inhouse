@@ -29,7 +29,7 @@ const eventController = {
       const {
         user_id = 1,
         event_name,
-        event_type,
+        event_type = 'General Event',
         description,
         date,
         time,
@@ -41,12 +41,15 @@ const eventController = {
         status = 'planning'
       } = req.body;
 
+      const finalEventName = event_name || event_type || 'Untitled Event';
+      const finalEventType = event_type || 'General Event';
+
       const result = await runQuery(
         `INSERT INTO events (
           user_id, event_name, event_type, description, date, time,
           location, city, venue_type, audience_size, duration, status
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [user_id, event_name, event_type, description, date, time, location, city, venue_type, audience_size, duration, status]
+        [user_id, finalEventName, finalEventType, description, date, time, location, city, venue_type, audience_size, duration, status]
       );
 
       const event = await getQuery('SELECT * FROM events WHERE id = ?', [result.id]);

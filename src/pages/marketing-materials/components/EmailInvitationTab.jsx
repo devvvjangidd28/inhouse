@@ -3,6 +3,7 @@ import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
+import EmailPreviewModal from '../../../components/ui/EmailPreviewModal';
 import { EmailService } from '../../../services/emailService';
 import { validateEmail } from '../../../utils/validation';
 
@@ -15,6 +16,8 @@ const EmailInvitationTab = () => {
   const [generatedContent, setGeneratedContent] = useState(null);
   const [emailErrors, setEmailErrors] = useState({});
   const [sendResult, setSendResult] = useState(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewEmailData, setPreviewEmailData] = useState(null);
 
   const toneOptions = [
     { value: 'formal', label: 'Formal' },
@@ -53,8 +56,20 @@ const EmailInvitationTab = () => {
     }
   };
 
-  const handleSendEmail = async () => {
-    // Validate email first
+  const handlePreviewEmail = () => {
+    if (generatedContent) {
+      const contentParts = generatedContent.content.split('\n\n');
+      setPreviewEmailData({
+        subject: generatedContent.subject,
+        greeting: contentParts[0] || 'Dear Guest,',
+        body: contentParts.slice(1, -1).join('\n\n') || generatedContent.content,
+        closing: contentParts[contentParts.length - 1] || 'Best regards,\nEvent Team'
+      });
+      setShowPreviewModal(true);
+    }
+  };
+
+  const handleSendEmail = async (emailData) => {
     const emailValidation = validateEmail(recipientEmail);
     if (!emailValidation.isValid) {
       setEmailErrors({ email: emailValidation.error });
@@ -64,6 +79,7 @@ const EmailInvitationTab = () => {
     setEmailErrors({});
     setIsSending(true);
     setSendResult(null);
+    setShowPreviewModal(false);
 
     try {
       const eventData = {
@@ -79,9 +95,9 @@ const EmailInvitationTab = () => {
       );
 
       setSendResult(result);
-      
+
       if (result.success) {
-        setRecipientEmail(''); // Clear email field on success
+        setRecipientEmail('');
       }
     } catch (error) {
       console.error('Email sending failed:', error);
@@ -92,6 +108,14 @@ const EmailInvitationTab = () => {
     } finally {
       setIsSending(false);
     }
+  };
+
+  const handleEditEmail = (editedData) => {
+    setGeneratedContent({
+      ...generatedContent,
+      subject: editedData.subject,
+      content: `${editedData.greeting}\n\n${editedData.body}\n\n${editedData.closing}`
+    });
   };
 
   const handleEmailChange = (e) => {
@@ -225,9 +249,18 @@ const EmailInvitationTab = () => {
                 required
               />
             </div>
-            <div className="flex items-end">
+            <div className="flex items-end gap-2">
               <Button
-                onClick={handleSendEmail}
+                variant="outline"
+                onClick={handlePreviewEmail}
+                disabled={!generatedContent}
+                iconName="Eye"
+                iconPosition="left"
+              >
+                Preview & Edit
+              </Button>
+              <Button
+                onClick={() => handleSendEmail()}
                 disabled={!recipientEmail || isSending || !generatedContent}
                 loading={isSending}
                 iconName="Send"
@@ -255,6 +288,14 @@ const EmailInvitationTab = () => {
           </div>
         </div>
       )}
+
+      <EmailPreviewModal
+        isOpen={showPreviewModal}
+        onClose={() => setShowPreviewModal(false)}
+        emailData={previewEmailData}
+        onSend={handleSendEmail}
+        onEdit={handleEditEmail}
+      />
     </div>
   );
 };
